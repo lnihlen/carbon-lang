@@ -34,7 +34,7 @@ class DiagnosticKind : public CARBON_ENUM_BASE(DiagnosticKind) {
   CARBON_ENUM_CONSTANT_DEFINITION(DiagnosticKind, Name)
 #include "toolchain/diagnostics/diagnostic_kind.def"
 
-// We expect DiagnosticKind to fit into 2 bits.
+// We expect DiagnosticKind to fit into 2 bytes.
 static_assert(sizeof(DiagnosticKind) == 2, "DiagnosticKind includes padding!");
 
 }  // namespace Carbon
