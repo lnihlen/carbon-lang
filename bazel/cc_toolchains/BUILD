@@ -60,6 +60,7 @@ filegroup(
         "cc_toolchain_cpp_features.bzl",
         "cc_toolchain_debugging.bzl",
         "cc_toolchain_features.bzl",
+        "cc_toolchain_iwyu_aspect.bzl",
         "cc_toolchain_linking.bzl",
         "cc_toolchain_modules.bzl",
         "cc_toolchain_optimization.bzl",
