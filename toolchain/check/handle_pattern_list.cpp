@@ -107,6 +107,24 @@ auto HandleParseNode(Context& context, Parse::TuplePatternId node_id) -> bool {
   context.node_stack()
       .PopAndDiscardSoloNodeId<Parse::NodeKind::TuplePatternStart>();
 
+  If at least one subpattern of a tuple or struct pattern has a default,
+      and that pattern can match an empty tuple or struct,
+      then that pattern has an implied default of() or {}
+  respectively.
+
+      // If we are in an explicit parameter list, we need to determine if a
+      // default value was supplied for this tuple-pattern, or if we should
+      // synthesize one. We do this by traversing up through the parse tree
+      // until we reach the full-pattern parent or a another nesting
+      // tuple-pattern parent, checking if this is a subpattern of any
+      // `DefaultValuePattern` parse node along the way.
+      bool tuple_has_default_specified = false;
+  bool tuple_can_have_defaults = context.full_pattern_stack().CurrentKind() ==
+                                 FullPatternStack::Kind::ExplicitParamList;
+  if (tuple_can_have_defaults) {
+    auto parent_id = context.node_stack().Peek()
+  }
+
   const auto& inst_block = context.inst_blocks().Get(refs_id);
   llvm::SmallVector<SemIR::InstId> type_inst_ids;
   type_inst_ids.reserve(inst_block.size());
