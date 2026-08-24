@@ -1,0 +1,26 @@
+core.workflow(
+  name = "default",
+  origin = folder.origin(
+    url = url,
+    # TODO - should be able to specify this in the root MODULE.bazel ala llvm
+    ref = "main",
+  ),
+  destination = folder.destination(
+
+  ),
+
+  mode = "SQUASH",
+
+  # TODO: glob wants a path in the destination repository, but we dont want
+  # the rust compiler in the carbon repo, so maybe we don't need to copy
+  # anything from the temporary checkout location? The documentation suggests
+  # that we want to put files that aren't in the origin but we'd like to keep
+  # in the destination in the exclude list, so if we're just updating a rust
+  # repo in the temporary location we can regen the build files if needed,
+  # no need to delete them.
+  destination_files = glob([""], exclude = ['/BUILD']),
+
+  transformations = [
+    buildozer.create()
+  ],
+)

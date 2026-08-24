@@ -119,6 +119,38 @@ python.toolchain(
 use_repo(python, "python_versions")
 
 ###############################################################################
+# Rust
+###############################################################################
+
+# We use copybara to generate the Bazel BUILD files for the Rust toolchain.
+# see: https://registry.bazel.build/modules/copybara/
+# TODO: There have been a number of releases to copybara since 2025-07-28, why
+# are those not reflected in the bazel integration?
+bazel_dep(name = "copybara", version = "0.0.0-20250728-6672ce2")
+bazel_dep(name = "rust-raw")
+git_override(
+    module_name = "rust-raw",
+    build_file_content = "# empty",
+    remote = "https://github.com/rust-lang/rust.git",
+)
+
+# plan - next we configure the overlay and start writing BUILD files. For
+# self-hosting we will want to bootstrap it but can leave that as a TODO.
+# After building rustc then we can look at getting crubit to generate the
+# bindings for the tools we need to interpret rmeta files, namely
+# rustc_metadata but probably also others for the datatypes we can
+# extract from there.
+# see https://rustc-dev-guide.rust-lang.org/backend/libs-and-metadata.html#rmeta
+# which mentions the --emit-metadata rustc flag.
+
+# I think if you want to embed rust into Carbon we can use the embedded rustc
+# to compile it to the same artifact we will want for external crates, and
+# then read the rmeta from that and generate the interface SemIR. For using
+# external crates, users can supply .rmeta or .rlib files to `carbon compile`,
+# and then hopefully we could also use the embedded rustc to link them in
+# with carbon link.
+
+###############################################################################
 # Bazel integration testing
 ###############################################################################
 

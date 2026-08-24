@@ -221,3 +221,6 @@ common --incompatible_use_plus_in_repo_names
 common --incompatible_use_python_toolchains
 common --incompatible_validate_top_level_header_inclusions
 common --incompatible_visibility_private_attributes_at_definition
+
+# The copybara release binary requires Java Runtime 21 or greater.
+run --java_runtime_version=remotejdk_21
