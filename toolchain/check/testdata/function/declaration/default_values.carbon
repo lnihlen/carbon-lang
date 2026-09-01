@@ -12,7 +12,6 @@
 // TIP:   bazel run //toolchain/testing:file_test -- --dump_output --file_tests=toolchain/check/testdata/function/declaration/default_values.carbon
 
 // --- fail_value_not_constant.carbon
-
 library "[[@TEST_NAME]]";
 
 // CHECK:STDERR: fail_value_not_constant.carbon:[[@LINE+4]]:23: error: default value for pattern must be constant [PatternDefaultValueNotConstant]
@@ -22,7 +21,6 @@ library "[[@TEST_NAME]]";
 fn H(x: i32, y: i32 = x);
 
 // --- fail_type_mismatch.carbon
-
 library "[[@TEST_NAME]]";
 
 // CHECK:STDERR: fail_type_mismatch.carbon:[[@LINE+4]]:6: error: default value expression type `str` doesn't match pattern type `i32` [PatternDefaultValueTypeMismatch]
@@ -32,7 +30,6 @@ library "[[@TEST_NAME]]";
 fn K(x: i32 = "bazz");
 
 // --- fail_pattern_defaults_not_in_parameter_list.carbon
-
 library "[[@TEST_NAME]]";
 
 // CHECK:STDERR: fail_pattern_defaults_not_in_parameter_list.carbon:[[@LINE+4]]:23: error: default values are only supported in parameter lists [PatternDefaultValueNotInParameterList]
@@ -42,7 +39,6 @@ library "[[@TEST_NAME]]";
 let (y: i32, x: i32 = 0) = (1, 2);
 
 // --- fail_required_default_values_missing.carbon
-
 library "[[@TEST_NAME]]";
 
 // CHECK:STDERR: fail_required_default_values_missing.carbon:[[@LINE+17]]:39: error: this pattern is missing a required default value. [RequiredPatternDefaultValueMissing]
@@ -65,7 +61,6 @@ library "[[@TEST_NAME]]";
 fn Z(v: i32, x: i32 = 3, (y: i32 = 2, z: i32), w: i32 = 4, k: i32);
 
 // --- basic.carbon
-
 library "[[@TEST_NAME]]";
 
 //@dump-sem-ir-begin
