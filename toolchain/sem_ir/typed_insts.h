@@ -2204,12 +2204,12 @@ struct TupleLiteral {
 
 // A tuple pattern, such as `(x, y: i32)`.
 struct TuplePattern {
-  static constexpr auto Kind =
-      InstKind::TuplePattern.Define<Parse::TuplePatternId>(
-          {.ir_name = "tuple_pattern",
-           .expr_category = ExprCategory::Pattern,
-           .constant_kind = InstConstantKind::Always,
-           .is_lowered = false});
+  static constexpr auto Kind = InstKind::TuplePattern.Define<Parse::NodeIdOneOf<
+      Parse::TuplePatternId, Parse::TuplePatternWithDefaultValueId>>(
+      {.ir_name = "tuple_pattern",
+       .expr_category = ExprCategory::Pattern,
+       .constant_kind = InstConstantKind::Always,
+       .is_lowered = false});
 
   // Always a PatternType whose scrutinee type is a tuple of the scrutinee
   // types of the elements.

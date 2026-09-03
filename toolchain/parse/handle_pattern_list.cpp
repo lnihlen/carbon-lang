@@ -162,24 +162,18 @@ auto HandleStructPatternUnderscore(Context& context) -> void {
   }
 }
 
-auto HandlePatternListElementCheckForDefaultValue(Context& context) -> void {
+// After consuming the `=` token, prepares to complete the `DefaultValuePattern`
+// parse node. Checks for the unspecified default value `=` and if not present
+// sets up to parse the default value expression.
+static auto HandlePatternDefaultValueExpression(Context& context,
+                                                Lex::TokenIndex equals_token)
+    -> void {
   auto state = context.PopState();
-
-  if (state.has_error) {
-    context.ReturnErrorOnState();
-  }
-
-  // Check for the optional `=` indicating a default value.
-  auto equals_token = context.ConsumeIf(Lex::TokenKind::Equal);
-  if (!equals_token) {
-    return;
-  }
-
   // Add the first virtual node surrounding the value expr node, to facilitate
   // handling in check.
-  context.AddLeafNode(NodeKind::DefaultValueExprStart, *equals_token);
+  context.AddLeafNode(NodeKind::DefaultValueExprStart, equals_token);
 
-  state.token = *equals_token;
+  state.token = equals_token;
   state.kind = StateKind::PatternListElementFinishDefaultValue;
   context.PushState(state);
 
@@ -192,6 +186,20 @@ auto HandlePatternListElementCheckForDefaultValue(Context& context) -> void {
 
   // No underscore, we parse this as a normal expression.
   context.PushStateForExpr(state.ambient_precedence);
+}
+
+auto HandlePatternListElementCheckForDefaultValue(Context& context) -> void {
+  // Check for the optional `=` indicating a default value.
+  auto equals_token = context.ConsumeIf(Lex::TokenKind::Equal);
+  if (!equals_token) {
+    auto state = context.PopState();
+    if (state.has_error) {
+      context.ReturnErrorOnState();
+    }
+    return;
+  }
+
+  HandlePatternDefaultValueExpression(context, *equals_token);
 }
 
 auto HandlePatternListElementFinishDefaultValue(Context& context) -> void {
@@ -340,10 +348,36 @@ auto HandlePatternListAsImplicit(Context& context) -> void {
 // Handles PatternListFinishAs(Paren|Tuple|Explicit|Implicit).
 static auto HandlePatternListFinish(Context& context, NodeKind node_kind,
                                     Lex::TokenKind token_kind) -> void {
-  auto state = context.PopState();
+  auto closing_token = context.ConsumeChecked(token_kind);
+  auto& state = context.state_stack().back();
 
-  context.AddNode(node_kind, context.ConsumeChecked(token_kind),
-                  state.has_error);
+  // We don't want to look for default values outside of explicit parameter
+  // lists, or for top-level patterns, or for anything but tuple and paren
+  // patterns, as the equals sign has other meanings in those other cases.
+  auto can_have_default =
+      (state.binding_context == BindingContext::ExplicitParam) &&
+      (state.ambient_precedence != PrecedenceGroup::ForTopLevelPattern()) &&
+      (node_kind == Parse::NodeKind::TuplePattern ||
+       node_kind == Parse::NodeKind::ParenPattern);
+  auto equals_token = can_have_default
+                          ? context.ConsumeIf(Lex::TokenKind::Equal)
+                          : std::optional<Lex::TokenIndex>();
+  if (!equals_token) {
+    context.AddNode(node_kind, closing_token, state.has_error);
+    context.PopAndDiscardState();
+    return;
+  }
+
+  if (node_kind == Parse::NodeKind::TuplePattern) {
+    context.AddNode(Parse::NodeKind::TuplePatternWithDefaultValue,
+                    closing_token, state.has_error);
+  } else {
+    CARBON_CHECK(node_kind == Parse::NodeKind::ParenPattern);
+    context.AddNode(Parse::NodeKind::ParenPatternWithDefaultValue,
+                    closing_token, state.has_error);
+  };
+
+  HandlePatternDefaultValueExpression(context, *equals_token);
 }
 
 auto HandlePatternListFinishAsParen(Context& context) -> void {

@@ -10,6 +10,7 @@
 
 fn F(x: i32, y: i32 = 0);
 fn G((x: i32, y: i32) = (1, 2));
+fn J((x: i32) = (4));
 fn H(unused x: i32 = 25);
 var b: auto = fn (x: i32 = 0) => x;
 // Can be used in def to avoid repeating values defined in decl.
@@ -47,13 +48,29 @@ fn I(x: i32 = _);
 // CHECK:STDOUT:   │ │ │   │ ├─BindingPatternTypeStart ':'
 // CHECK:STDOUT:   │ │ │   │ ├─IntTypeLiteral 'i32'
 // CHECK:STDOUT:   │ │ │   ├─LetBindingPattern ':'
-// CHECK:STDOUT:   │ │ │ ╭─TuplePattern ')'
+// CHECK:STDOUT:   │ │ │ ╭─TuplePatternWithDefaultValue ')'
 // CHECK:STDOUT:   │ │ │ ├─DefaultValueExprStart '='
 // CHECK:STDOUT:   │ │ │ │ ╭─TupleLiteralStart '('
 // CHECK:STDOUT:   │ │ │ │ ├─IntLiteral '1'
 // CHECK:STDOUT:   │ │ │ │ ├─TupleLiteralComma ','
 // CHECK:STDOUT:   │ │ │ │ ├─IntLiteral '2'
 // CHECK:STDOUT:   │ │ │ ├─TupleLiteral ')'
+// CHECK:STDOUT:   │ │ ├─DefaultValuePattern '='
+// CHECK:STDOUT:   │ ├─ExplicitParamList ')'
+// CHECK:STDOUT:   ├─FunctionDecl ';'
+// CHECK:STDOUT:   │ ╭─FunctionIntroducer 'fn'
+// CHECK:STDOUT:   │ ├─IdentifierNameMaybeBeforeSignature 'J'
+// CHECK:STDOUT:   │ │ ╭─ExplicitParamListStart '('
+// CHECK:STDOUT:   │ │ │   ╭─TuplePatternStart '('
+// CHECK:STDOUT:   │ │ │   │ ╭─IdentifierNameNotBeforeSignature 'x'
+// CHECK:STDOUT:   │ │ │   │ ├─BindingPatternTypeStart ':'
+// CHECK:STDOUT:   │ │ │   │ ├─IntTypeLiteral 'i32'
+// CHECK:STDOUT:   │ │ │   ├─LetBindingPattern ':'
+// CHECK:STDOUT:   │ │ │ ╭─ParenPatternWithDefaultValue ')'
+// CHECK:STDOUT:   │ │ │ ├─DefaultValueExprStart '='
+// CHECK:STDOUT:   │ │ │ │ ╭─ParenExprStart '('
+// CHECK:STDOUT:   │ │ │ │ ├─IntLiteral '4'
+// CHECK:STDOUT:   │ │ │ ├─ParenExpr ')'
 // CHECK:STDOUT:   │ │ ├─DefaultValuePattern '='
 // CHECK:STDOUT:   │ ├─ExplicitParamList ')'
 // CHECK:STDOUT:   ├─FunctionDecl ';'

@@ -80,7 +80,8 @@ auto HandleParseNode(Context& context, Parse::ExplicitParamListId node_id)
                             Parse::NodeKind::ExplicitParamListStart);
 }
 
-auto HandleParseNode(Context& context, Parse::ParenPatternId node_id) -> bool {
+static auto HandleParenPattern(Context& context, Parse::NodeId node_id,
+                               Parse::NodeKind /*node_kind*/) -> bool {
   EndExprRegionForPattern(context, context.node_stack());
   auto pattern_id = context.node_stack().PopPattern();
   context.param_and_arg_refs_stack().PopAndDiscard();
@@ -93,7 +94,22 @@ auto HandleParseNode(Context& context, Parse::ParenPatternId node_id) -> bool {
   return true;
 }
 
-auto HandleParseNode(Context& context, Parse::TuplePatternId node_id) -> bool {
+auto HandleParseNode(Context& context, Parse::ParenPatternId node_id) -> bool {
+  return HandleParenPattern(context, node_id, Parse::NodeKind::ParenPattern);
+}
+
+auto HandleParseNode(Context& context,
+                     Parse::ParenPatternWithDefaultValueId node_id) -> bool {
+  return HandleParenPattern(context, node_id,
+                            Parse::NodeKind::ParenPatternWithDefaultValue);
+}
+
+static auto HandleTupleListEnd(
+    Context& context,
+    Parse::NodeIdOneOf<Parse::TuplePatternId,
+                       Parse::TuplePatternWithDefaultValueId>
+        node_id,
+    Parse::NodeKind /*node_kind*/) -> bool {
   if (context.node_stack().PeekIs(Parse::NodeKind::TuplePatternStart)) {
     // End the pending region started by a trailing comma, or the opening
     // delimiter of an empty list.
@@ -133,6 +149,16 @@ auto HandleParseNode(Context& context, Parse::TuplePatternId node_id) -> bool {
   // pending at the end of handling for a pattern.
   BeginExprRegionForPattern(context);
   return true;
+}
+
+auto HandleParseNode(Context& context, Parse::TuplePatternId node_id) -> bool {
+  return HandleTupleListEnd(context, node_id, Parse::NodeKind::TuplePattern);
+}
+
+auto HandleParseNode(Context& context,
+                     Parse::TuplePatternWithDefaultValueId node_id) -> bool {
+  return HandleTupleListEnd(context, node_id,
+                            Parse::NodeKind::TuplePatternWithDefaultValue);
 }
 
 auto HandleParseNode(Context& context, Parse::StructPatternId node_id) -> bool {

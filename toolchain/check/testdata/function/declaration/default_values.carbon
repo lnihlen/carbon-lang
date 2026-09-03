@@ -41,6 +41,14 @@ library "[[@TEST_NAME]]";
 // CHECK:STDERR:
 let (y: i32, x: i32 = 0) = (1, 2);
 
+// --- fail_nested_pattern_defaults_not_in_parameter_list.carbon
+
+// CHECK:STDERR: fail_nested_pattern_defaults_not_in_parameter_list.carbon:[[@LINE+4]]:33: error: default values are only supported in parameter lists [PatternDefaultValueNotInParameterList]
+// CHECK:STDERR: let (x: i32, (y: i32, z: i32) = (1, 2)) = (1, (2, 3));
+// CHECK:STDERR:                                 ^~~~~~
+// CHECK:STDERR:
+let (x: i32, (y: i32, z: i32) = (1, 2)) = (1, (2, 3));
+
 // --- fail_required_default_values_missing.carbon
 
 library "[[@TEST_NAME]]";

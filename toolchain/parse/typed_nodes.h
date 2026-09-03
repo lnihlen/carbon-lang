@@ -528,11 +528,35 @@ struct ParenPattern {
   Lex::CloseParenTokenIndex token;
 };
 
+// Identical to `ParenPattern` but with a different `Kind` to signal to the
+// check layer that this tuple has a default value provided.
+struct ParenPatternWithDefaultValue {
+  static constexpr auto Kind = NodeKind::ParenPatternWithDefaultValue.Define(
+      {.category = NodeCategory::Pattern,
+       .bracketed_by = TuplePatternStart::Kind,
+       .child_count = 2});
+  TuplePatternStartId left_paren;
+  AnyPatternId inner;
+  Lex::CloseParenTokenIndex token;
+};
+
 // A tuple pattern that isn't an explicit parameter list: `(a: i32, b: i32)`.
 struct TuplePattern {
   static constexpr auto Kind =
       NodeKind::TuplePattern.Define({.category = NodeCategory::Pattern,
                                      .bracketed_by = TuplePatternStart::Kind});
+
+  TuplePatternStartId left_paren;
+  CommaSeparatedList<AnyPatternId, PatternListCommaId> params;
+  Lex::CloseParenTokenIndex token;
+};
+
+// Identical to `TuplePattern` but with a different `Kind` to signal to the
+// check layer that this tuple has a default value provided.
+struct TuplePatternWithDefaultValue {
+  static constexpr auto Kind = NodeKind::TuplePatternWithDefaultValue.Define(
+      {.category = NodeCategory::Pattern,
+       .bracketed_by = TuplePatternStart::Kind});
 
   TuplePatternStartId left_paren;
   CommaSeparatedList<AnyPatternId, PatternListCommaId> params;
