@@ -79,6 +79,13 @@ library "[[@TEST_NAME]]";
 fn F(a: i32, (b: i32, (c: i32, (d: i32, e: i32))) = (1, (2, (3, 4))));
 //@dump-sem-ir-end
 
+// --- implicit.carbon
+library "[[@TEST_NAME]]";
+
+//@dump-sem-ir-begin
+fn F(a: i32 = 0, (b: i32 = 0, c: i32 = 0));
+//@dump-sem-ir-end
+
 // --- basic.carbon
 
 library "[[@TEST_NAME]]";

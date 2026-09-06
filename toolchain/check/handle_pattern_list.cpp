@@ -109,7 +109,7 @@ static auto HandleTupleListEnd(
     Parse::NodeIdOneOf<Parse::TuplePatternId,
                        Parse::TuplePatternWithDefaultValueId>
         node_id,
-    Parse::NodeKind /*node_kind*/) -> bool {
+    Parse::NodeKind node_kind) -> bool {
   if (context.node_stack().PeekIs(Parse::NodeKind::TuplePatternStart)) {
     // End the pending region started by a trailing comma, or the opening
     // delimiter of an empty list.
@@ -126,6 +126,7 @@ static auto HandleTupleListEnd(
   const auto& inst_block = context.inst_blocks().Get(refs_id);
   llvm::SmallVector<SemIR::InstId> type_inst_ids;
   type_inst_ids.reserve(inst_block.size());
+  bool all_subpatterns_have_default_values = true;
   for (auto inst : inst_block) {
     if (InNonStaticFieldDecl(context)) {
       CARBON_DIAGNOSTIC(FieldWithTuplePattern, Error,
@@ -136,15 +137,39 @@ static auto HandleTupleListEnd(
       return false;
     }
 
+    all_subpatterns_have_default_values &=
+        context.insts().Is<SemIR::DefaultValuePattern>(inst);
     auto type_id = ExtractScrutineeType(context.sem_ir(),
                                         context.insts().Get(inst).type_id());
     type_inst_ids.push_back(context.types().GetTypeInstId(type_id));
   }
   auto type_id = GetPatternType(context, GetTupleType(context, type_inst_ids));
-  context.node_stack().Push(
-      node_id,
-      AddInst<SemIR::TuplePattern>(
-          context, node_id, {.type_id = type_id, .elements_id = refs_id}));
+  auto pattern_id = AddInst<SemIR::TuplePattern>(
+      context, node_id, {.type_id = type_id, .elements_id = refs_id});
+
+  // If all the tuple subpatterns have default values, that creates an implicit
+  // default value for the tuple pattern as well. However, if a default value
+  // has also been specified, issue a diagnostic because the two are ambiguous.
+  if (all_subpatterns_have_default_values) {
+    if (node_kind == Parse::NodeKind::TuplePattern) {
+      auto expr_constant_id = context.constants().GetOrAdd(
+          SemIR::TupleValue{.type_id = GetTupleType(context, {}),
+                            .elements_id = SemIR::InstBlockId::Empty},
+          SemIR::ConstantDependence::None);
+      auto expr_inst_id = context.constant_values().GetInstId(expr_constant_id);
+      auto default_value_id =
+          context.full_pattern_stack().AddDefaultValue(expr_inst_id);
+      pattern_id = AddInst<SemIR::DefaultValuePattern>(
+          context, Parse::NodeId::None,
+          {.type_id = type_id,
+           .subpattern_id = pattern_id,
+           .default_value_id = default_value_id});
+    } else {
+      // FIXME diagnostic
+    }
+  }
+  context.node_stack().Push(node_id, pattern_id);
+
   // Start a new pending `ExprRegion`, to maintain the invariant that one is
   // pending at the end of handling for a pattern.
   BeginExprRegionForPattern(context);
