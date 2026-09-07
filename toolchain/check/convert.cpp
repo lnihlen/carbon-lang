@@ -377,6 +377,7 @@ static auto ConvertTupleToTuple(Context& context, SemIR::TupleType src_type,
           Diagnostics::IntAsSelect, Diagnostics::IntAsSelect);
       context.emitter().Emit(value_loc_id, TupleInitElementCountMismatch,
                              dest_elem_types.size(), src_elem_types.size());
+      CARBON_FATAL("doing the tuple check!");
     }
     return SemIR::ErrorInst::InstId;
   }

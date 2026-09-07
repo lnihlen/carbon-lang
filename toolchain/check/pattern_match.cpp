@@ -750,8 +750,28 @@ auto MatchContext::DoPreWork(State state, SemIR::TuplePattern tuple_pattern,
   }
   auto scrutinee = context_.insts().GetWithLocId(scrutinee_id);
   if (auto scrutinee_literal = scrutinee.inst.TryAs<SemIR::TupleLiteral>()) {
-    auto subscrutinee_ids =
-        context_.inst_blocks().Get(scrutinee_literal->elements_id);
+    llvm::SmallVector<SemIR::InstId> subscrutinee_ids;
+    subscrutinee_ids.reserve(subpattern_ids.size());
+    llvm::append_range(subscrutinee_ids, context_.inst_blocks().Get(
+                                             scrutinee_literal->elements_id));
+    for (size_t i = subscrutinee_ids.size(); i < subpattern_ids.size(); ++i) {
+      // Default not provided for this value, so defaults to the right of this
+      // are not expected either.
+      llvm::errs() << "\n";
+      context_.insts().Get(subpattern_ids[i]).Print(llvm::errs());
+      llvm::errs() << "\n";
+
+      if (auto default_value_pattern =
+              context_.insts().TryGetAs<SemIR::DefaultValuePattern>(
+                  subpattern_ids[i])) {
+        auto default_index = default_value_pattern->default_value_id;
+        subscrutinee_ids.push_back(
+            context_.full_pattern_stack()
+                .GetDefaultValues()[default_index.index]);
+      } else {
+        break;
+      }
+    }
     if (subscrutinee_ids.size() != subpattern_ids.size()) {
       CARBON_DIAGNOSTIC(TuplePatternSizeDoesntMatchLiteral, Error,
                         "tuple pattern expects {0} element{0:s}, but tuple "
@@ -926,17 +946,25 @@ auto MatchContext::DoPostWork(State /*state*/,
   specific_id_stack_.pop_back();
 }
 
-auto MatchContext::DoPreWork(State state,
+auto MatchContext::DoPreWork(State /*state*/,
                              SemIR::DefaultValuePattern default_value_pattern,
                              SemIR::InstId scrutinee_id, WorkItem entry)
     -> void {
-  if (!std::holds_alternative<CalleeState*>(state)) {
-    CARBON_FATAL("Unhandled state kind in DefaultValuePattern pre-work");
-  }
-  // We will need to check the type of the parameter to make sure it
-  // matches the provided default, so add ourselves to the post-work list.
+  // We will need to check the default value expression to see if it
+  // matches against the subpattern.
   results_stack_.PushArray();
   AddAsPostWork(entry);
+
+  // If the scrutinee isn't specified, provide one from the default value. On
+  // callee matching this can check that the default value expr matches the
+  // provided subpattern, for tuple-pattern subpatterns. Note that if the
+  // developer specified the placeholder default value, `scrutinee_id` will
+  // still be `None`.
+  if (!scrutinee_id.has_value()) {
+    scrutinee_id =
+        context_.full_pattern_stack()
+            .GetDefaultValues()[default_value_pattern.default_value_id.index];
+  }
 
   // Process the subpattern for the default.
   AddWork({.pattern_id = default_value_pattern.subpattern_id,
@@ -944,22 +972,27 @@ auto MatchContext::DoPreWork(State state,
            .allow_unmarked_ref = entry.allow_unmarked_ref});
 }
 
-auto MatchContext::DoPostWork(State state,
+auto MatchContext::DoPostWork(State /*state*/,
                               SemIR::DefaultValuePattern default_value_pattern,
                               WorkItem entry) -> void {
-  if (!std::holds_alternative<CalleeState*>(state)) {
-    CARBON_FATAL("Unhandled state kind in DefaultValuePattern post-work");
-  }
   // Extract the type of the parameter from the parameter instruction.
   auto param_inst_id = results_stack_.PeekArray().back();
   auto param_type_id = context_.insts().Get(param_inst_id).type_id();
 
+  auto wrapper_subpattern =
+      context_.insts().TryGetAs<SemIR::WrapperBindingPattern>(
+          default_value_pattern.subpattern_id);
+  bool subpattern_is_tuple = context_.insts().Is<SemIR::TuplePattern>(
+      wrapper_subpattern ? wrapper_subpattern->subpattern_id
+                         : default_value_pattern.subpattern_id);
   auto default_value_inst_id =
       context_.full_pattern_stack()
           .GetDefaultValues()[default_value_pattern.default_value_id.index];
-  // If a constant was specified, we should be able to convert it into the
-  // type of the parameter.
-  if (default_value_inst_id != SemIR::InstId::None) {
+
+  // If a non-tuple constant was specified, we should be able to convert it into
+  // the type of the parameter. We handle tuple subpatterns by pattern matching
+  // against the default value as a scrutinee during subpattern processing.
+  if (default_value_inst_id != SemIR::InstId::None && !subpattern_is_tuple) {
     // We should be able to convert the supplied constant into the type of
     // the parameter.
     auto converted_id = TryConvertToValueOfType(
@@ -1001,8 +1034,9 @@ auto MatchContext::Dispatch(State state, WorkItem entry) -> void {
   CARBON_KIND_SWITCH(entry.work) {
     case CARBON_KIND(PreWork work): {
       // TODO: Require that `work.scrutinee_id` is valid if and only if insts
-      // should be emitted, once we start emitting `Param` insts in the
-      // `ParamPattern` case.
+      // should be emitted, or if we're processing a DefaultValuePattern
+      // subpattern, once we start emitting `Param` insts in the `ParamPattern`
+      // case.
       CARBON_KIND_SWITCH(pattern) {
         case CARBON_KIND_ANY(SemIR::AnyBindingPattern, any_binding_pattern): {
           DoPreWork(state, any_binding_pattern, work.scrutinee_id, entry);
