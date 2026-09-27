@@ -83,7 +83,8 @@ auto BuildRuntimesSubcommand::RunInternal(DriverEnv& driver_env)
                      driver_env.vlog_stream);
 
   Runtimes::Cache::Features features = {
-      .target = options_.codegen_options.target.str()};
+      .target = options_.codegen_options.target.str(),
+      .sysroot = runner-};
 
   bool is_cache = options_.directory.empty();
   std::filesystem::path output_path = options_.directory.str();

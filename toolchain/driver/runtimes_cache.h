@@ -237,6 +237,7 @@ class Runtimes::Cache {
   // runtimes such as sanitizers and CPU-specific optimizations.
   struct Features {
     std::string target;
+    std::string sysroot;
   };
 
   Cache() = default;

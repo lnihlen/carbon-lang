@@ -153,8 +153,8 @@ auto AppendDefaultClangArgs(const InstallPaths& install_paths,
       // well. Homebrew and I suspect the Xcode Clang both have this hard coded
       // at build time, so this seems reasonably safe but we can revisit if/when
       // needed.
-      args.push_back(
-          "--sysroot=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk");
+      // args.push_back(
+      //    "--sysroot=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk");
 
       // We also need to insist on a modern linker, otherwise the driver tries
       // too old and deprecated flags. The specific number here comes from an
